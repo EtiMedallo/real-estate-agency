@@ -1,0 +1,60 @@
+{
+  "property_id": "casa_bosque",
+  "tone_profile": "luxury_minimal",
+  "duration_seconds": 15.0,
+  "audio": {
+    "voiceover_prompt": "Atmósfera fría, severa, silenciosa. Voz masculina pausada.",
+    "background_track": "ambient_nordic_silence.mp3",
+    "voice_id": "architect_male_es_01"
+  },
+  "scenes": [
+    {
+      "id": "scene_01",
+      "start_time": 0.0,
+      "end_time": 3.5,
+      "asset": {
+        "source_type": "original_photo",
+        "file_path": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200",
+        "motion_effect": "ken_burns_zoom",
+        "runway_prompt": "Slow forward tilt revealing concrete walls and surrounding forest."
+      },
+      "overlay_text": {
+        "text": "SILENCIO VISUAL",
+        "position": "center"
+      },
+      "voiceover_script": "Esto no es lujo. Es silencio visual."
+    },
+    {
+      "id": "scene_02",
+      "start_time": 3.5,
+      "end_time": 10.0,
+      "asset": {
+        "source_type": "original_photo",
+        "file_path": "https://images.unsplash.com/photo-1507090960745-b32f65d3113a?q=80&w=1200",
+        "motion_effect": "ken_burns_pan",
+        "runway_prompt": "Slow pan over the dark pine trees and water reflection."
+      },
+      "overlay_text": {
+        "text": "GEOMETRÍAS PURAS",
+        "position": "bottom"
+      },
+      "voiceover_script": "Estructuras severas de hormigón visto y piedra volcánica. Nada sobra."
+    },
+    {
+      "id": "scene_03",
+      "start_time": 10.0,
+      "end_time": 15.0,
+      "asset": {
+        "source_type": "original_photo",
+        "file_path": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200",
+        "motion_effect": "ken_burns_zoom",
+        "runway_prompt": "Slow push forward inside the double height concrete space."
+      },
+      "overlay_text": {
+        "text": "ESCRIBE SILENCIO",
+        "position": "center"
+      },
+      "voiceover_script": "Para quienes buscan un refugio de absoluto orden mental. Comenta SILENCIO."
+    }
+  ]
+}

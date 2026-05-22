@@ -1,0 +1,59 @@
+# Properties Database (Premium Listings)
+
+casa_bosque:
+  id: "casa_bosque"
+  title: "Casa del Bosque"
+  type: "Luxury Residential"
+  default_tone: "luxury_minimal"
+  location: "Las Colinas, Santa Catarina (Upper Valley)"
+  price: "$1,850,000"
+  dimensions:
+    built: "480 m²"
+    lot: "1,200 m²"
+  specs:
+    bedrooms: 4
+    bathrooms: 4.5
+    parking: 3 cars
+  materials:
+    - "Exposed board-formed concrete"
+    - "Raw black iron window frames"
+    - "Locally sourced volcanic stone walls"
+    - Solid reclaimed white oak floors
+  unique_features:
+    - "Double-height living room facing a preserved pine forest"
+    - "Infinity edge heated lap pool blending into the tree line"
+    - "Private subterranean wine cellar and tasting room"
+    - "Floor-to-ceiling glass walls that fully slide open to a 150 m² terrace"
+  brand_narrative:
+    hook_angle: "Architectural silence. Surrounded by pine forest, built with native volcanic stone and raw concrete."
+    target_audience: "Design-conscious professionals, architects, families looking for absolute privacy and natural immersion."
+    transformation: "From chaotic city noise to visual silence and architectural breathing space."
+
+loft_industrial:
+  id: "loft_industrial"
+  title: "El Astillero Loft"
+  type: "Premium Urban Loft"
+  default_tone: "modern_architecture"
+  location: "Distrito de Diseño, Zona 4"
+  price: "$345,000"
+  dimensions:
+    built: "135 m²"
+    levels: "2 (Duplex)"
+  specs:
+    bedrooms: 1
+    bathrooms: 1.5
+    parking: 1 car
+  materials:
+    - "Exposed original brickwork"
+    - "Polished microcement floors"
+    - "Structural steel beams"
+    - "Brushed copper fixtures"
+  unique_features:
+    - "Double-height ceiling (6.2 meters) with massive factory-style arched windows"
+    - "Custom iron floating staircase leading to the mezzanine master bedroom"
+    - "Open-concept chef kitchen with concrete countertops"
+    - "Private brick balcony overlooking the central creative plaza"
+  brand_narrative:
+    hook_angle: "Industrial heritage meets modern minimalism. A true New York-style loft in the heart of the design district."
+    target_audience: "Young creative directors, tech entrepreneurs, art collectors, design enthusiasts."
+    transformation: "Living inside a piece of history, walking distance from the city's best cafes, galleries, and studios."

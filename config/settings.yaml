@@ -1,0 +1,144 @@
+# Global System & LLM Settings
+
+# Active LLM Provider Configuration
+# Supported providers: gemini, openai, anthropic
+llm:
+  provider: "gemini"
+  model: "gemini-2.5-pro" # Fallback/default model
+  temperature: 0.7
+  max_tokens: 2048
+
+# Specific Model Maps per Provider
+providers:
+  gemini:
+    default_model: "gemini-2.5-pro"
+    alternative_model: "gemini-2.5-flash"
+    api_key_env: "GEMINI_API_KEY"
+  openai:
+    default_model: "gpt-4o"
+    alternative_model: "gpt-4o-mini"
+    api_key_env: "OPENAI_API_KEY"
+  anthropic:
+    default_model: "claude-3-7-sonnet"
+    alternative_model: "claude-3-5-haiku"
+    api_key_env: "ANTHROPIC_API_KEY"
+
+# Premium Brand Defaults
+brand:
+  company_name: "Antigravity Real Estate Agency"
+  tone_style: "Premium Architectural Journalistic"
+  default_beautiful_prose:
+    register: "literary_modern"
+    density: "standard"
+    heat: "warm"
+    length: "medium"
+
+# Tone Profiles for different property types
+tone_profiles:
+  luxury_minimal:
+    beautiful_prose:
+      register: "cold_steel"
+      density: "dense"
+      heat: "cool"
+      length: "short"
+    vocabulary:
+      - "silencio visual"
+      - "hormigón visto"
+      - "geometrías puras"
+      - "ausencia"
+      - "luz filtrada"
+      - "líneas limpias"
+      - "sencillez severa"
+    triggers: "Exclusividad radical por medio del silencio, elegancia discreta, sofisticación intelectual, estatus no ostentoso."
+    pacing: "Frases cortas, secas y contundentes. Sin adornos ni adjetivación vacía. Puntuación austera."
+    cta: "Comenta SILENCIO y te enviamos la ficha técnica."
+    
+  luxury_emotional:
+    beautiful_prose:
+      register: "literary_modern"
+      density: "standard"
+      heat: "warm"
+      length: "medium"
+    vocabulary:
+      - "atmósfera"
+      - "refugio"
+      - "sentido del lugar"
+      - "tiempo suspendido"
+      - "tacto"
+      - "luz dorada"
+      - "santuario"
+    triggers: "Paz mental absoluta, conexión visceral y sensorial con el espacio, bienestar familiar profundo."
+    pacing: "Rítmico, pausado y sensorial. Invita a detenerse y respirar. Evocación de sensaciones."
+    cta: "Comenta REFUGIO para coordinar tu recorrido privado."
+    
+  investment_focused:
+    beautiful_prose:
+      register: "journalistic"
+      density: "standard"
+      heat: "cool"
+      length: "medium"
+    vocabulary:
+      - "rendimiento"
+      - "plusvalía histórica"
+      - "tasa de capitalización"
+      - "activo defensivo"
+      - "tasa de ocupación"
+      - "crecimiento patrimonial"
+      - "demanda de alquiler"
+    triggers: "Preservación del capital frente a la inflación, creación de riqueza intergeneracional, racionalidad basada en datos duros."
+    pacing: "Crispado, factual y directo al grano. Cada afirmación se respalda con un hecho o número."
+    cta: "Escribe ANALISIS para recibir la corrida financiera completa."
+
+  airbnb_high_cashflow:
+    beautiful_prose:
+      register: "journalistic"
+      density: "lean"
+      heat: "warm"
+      length: "short"
+    vocabulary:
+      - "tasa de ocupación"
+      - "retorno anualizado"
+      - "diseño instagrameable"
+      - "rentas cortas"
+      - "atracción turística"
+      - "cashflow mensual"
+    triggers: "Ingresos pasivos inmediatos, libertad de tiempo, optimización de ingresos mediante plataformas digitales."
+    pacing: "Dinámico, ágil y estimulante. Rápido de leer, comunica alta demanda y oportunidad."
+    cta: "Escribe CASHFLOW para recibir el dossier de proyección turística."
+
+  family_oriented:
+    beautiful_prose:
+      register: "literary_modern"
+      density: "standard"
+      heat: "warm"
+      length: "medium"
+    vocabulary:
+      - "seguridad"
+      - "legado"
+      - "comunidad"
+      - "crecimiento"
+      - "espacios compartidos"
+      - "estabilidad"
+      - "calidez"
+    triggers: "Protección y desarrollo de los hijos, sentido de pertenencia comunitaria, estabilidad familiar de largo plazo."
+    pacing: "Accesible, fluido y arraigado en la vida diaria. Acogedor y confiable."
+    cta: "Comenta FAMILIA y te compartimos los detalles de la zona."
+
+  modern_architecture:
+    beautiful_prose:
+      register: "cold_steel"
+      density: "dense"
+      heat: "cool"
+      length: "short"
+    vocabulary:
+      - "volumetría"
+      - "honestidad material"
+      - "luz cenital"
+      - "planta libre"
+      - "estructura portante"
+      - "transición de planos"
+      - "geometría funcional"
+    triggers: "Aprecio estético radical, identidad arquitectónica distintiva, vivir dentro de una escultura habitable."
+    pacing: "Preciso, analítico y enfocado en la física, geometría y honestidad de los materiales."
+    cta: "Escribe BREGMA y te enviamos los planos de distribución."
+
