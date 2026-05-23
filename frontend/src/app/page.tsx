@@ -19,6 +19,8 @@ interface UploadedFile {
   type: string;
   progress: number;
   completed: boolean;
+  url?: string;
+  file?: File;
 }
 
 interface GeneratedContent {
@@ -65,10 +67,10 @@ export default function Home() {
   const [description, setDescription] = useState("");
   const [amenitiesText, setAmenitiesText] = useState("");
   const [projectUrl, setProjectUrl] = useState("");
-  
+
   // Amenities List
   const [amenities, setAmenities] = useState<string[]>([]);
-  
+
   // File Upload State
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -87,9 +89,11 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [generatedResults, setGeneratedResults] = useState<GeneratedContent>({});
+  const [generatedProposals, setGeneratedProposals] = useState<GeneratedContent[]>([]);
+  const [activeProposalIndex, setActiveProposalIndex] = useState(0);
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({});
   const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState(["", "", ""]); // Feedback for each proposal
 
   // Loading Steps for visual premium effect
   const loadingSteps = [
@@ -156,7 +160,9 @@ export default function Home() {
       size: f.size,
       type: f.type,
       progress: 0,
-      completed: false
+      completed: false,
+      file: f,
+      url: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined
     }));
 
     setUploadedFiles((prev) => [...prev, ...newFiles]);
@@ -167,7 +173,7 @@ export default function Home() {
         currentProgress += 20;
         setUploadedFiles((prev) =>
           prev.map((pf) =>
-            pf.name === file.name
+            pf.name === file.name && pf.file === file.file
               ? { ...pf, progress: currentProgress, completed: currentProgress >= 100 }
               : pf
           )
@@ -180,6 +186,10 @@ export default function Home() {
   };
 
   const removeFile = (name: string) => {
+    const fileToRemove = uploadedFiles.find(f => f.name === name);
+    if (fileToRemove?.url) {
+      URL.revokeObjectURL(fileToRemove.url);
+    }
     setUploadedFiles(uploadedFiles.filter((f) => f.name !== name));
   };
 
@@ -192,26 +202,41 @@ export default function Home() {
   };
 
   // Generate Mock Results according to Selected Tone and Form Inputs
-  const generateMockContent = (tone: string): GeneratedContent => {
+  const generateMockContent = (tone: string, variation: number = 0): GeneratedContent => {
     const nameStr = projectName || "Casa del Bosque";
     const locStr = location || "Las Colinas, Santa Catarina";
     const priceStr = price ? `$${parseFloat(price.replace(/[^\d.]/g, "")).toLocaleString()}` : "$1,850,000";
     const sqmStr = sqm ? `${sqm} m²` : "450 m²";
     const amList = amenities.length > 0 ? amenities.join(", ") : "piscina infinita, muros portantes de hormigón, pinar natural";
 
-    // Unsplash assets pools to render in Remotion player
+    // Use uploaded images if available, fallback to Unsplash
+    const uploadedImages = uploadedFiles
+      .filter(f => f.type.startsWith("image/") && f.completed && f.url)
+      .map(f => f.url as string);
+
     const isLoft = nameStr.toLowerCase().includes("loft") || nameStr.toLowerCase().includes("industrial");
-    const images = isLoft
+    const fallbackImages = isLoft
       ? [
-          "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?q=80&w=1200", // Loft facade
-          "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=1200", // Large windows
-          "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200"  // Mezzanine bedroom
-        ]
+        "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?q=80&w=1200", // Loft facade
+        "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=1200", // Large windows
+        "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200"  // Mezzanine bedroom
+      ]
       : [
-          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200", // Forest facade
-          "https://images.unsplash.com/photo-1507090960745-b32f65d3113a?q=80&w=1200", // Pines
-          "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200"  // Double height concrete interior
-        ];
+        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200", // Forest facade
+        "https://images.unsplash.com/photo-1507090960745-b32f65d3113a?q=80&w=1200", // Pines
+        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200"  // Double height concrete interior
+      ];
+
+    // Mix uploaded images with fallbacks if needed
+    let images = [...uploadedImages];
+    if (images.length < 3) {
+      images = [...images, ...fallbackImages.slice(0, 3 - images.length)];
+    }
+
+    // Shuffle images slightly based on variation for variety
+    if (variation > 0) {
+      images = [...images.slice(variation % images.length), ...images.slice(0, variation % images.length)];
+    }
 
     const contentMap: { [key: string]: GeneratedContent } = {
       luxury_minimal: {
@@ -769,7 +794,13 @@ export default function Home() {
         setLoadingStep(currentStep);
       } else {
         clearInterval(interval);
-        setGeneratedResults(generateMockContent(selectedTone));
+        const proposals = [
+          generateMockContent(selectedTone, 0),
+          generateMockContent(selectedTone, 1),
+          generateMockContent(selectedTone, 2)
+        ];
+        setGeneratedProposals(proposals);
+        setActiveProposalIndex(0);
         setIsLoading(false);
         setHasGenerated(true);
       }
@@ -780,37 +811,49 @@ export default function Home() {
   const handleRegenerateSection = (section: string) => {
     setRegeneratingSection(section);
     setTimeout(() => {
-      const fullMock = generateMockContent(selectedTone);
-      setGeneratedResults((prev) => {
-        const updated = { ...prev };
-        if (section === "meta_ads" && fullMock.meta_ads) {
-          updated.meta_ads = {
+      const fullMock = generateMockContent(selectedTone, activeProposalIndex);
+      setGeneratedProposals((prev) => {
+        const updated = [...prev];
+        const current = { ...updated[activeProposalIndex] };
+
+        const feedbackPrefix = feedback[activeProposalIndex] ? `[Refinado con feedback: ${feedback[activeProposalIndex]}] ` : "";
+
+        if (section === "all" || section === "meta_ads") {
+          current.meta_ads = fullMock.meta_ads ? {
             ...fullMock.meta_ads,
-            headline: fullMock.meta_ads.headline + " (Alternativo)",
-            primary_text: "Variación: " + fullMock.meta_ads.primary_text
-          };
-        } else if (section === "reels" && fullMock.reels) {
-          updated.reels = {
+            headline: feedbackPrefix + fullMock.meta_ads.headline,
+            primary_text: feedbackPrefix + fullMock.meta_ads.primary_text
+          } : undefined;
+        }
+
+        if (section === "all" || section === "reels") {
+          current.reels = fullMock.reels ? {
             ...fullMock.reels,
-            concept: fullMock.reels.concept + " [Versión Alternativa]",
+            concept: feedbackPrefix + fullMock.reels.concept,
             hook: {
               ...fullMock.reels.hook,
-              verbal: '"Nueva perspectiva: ' + fullMock.reels.hook.verbal.replace(/"/g, "") + '"'
+              verbal: feedbackPrefix + fullMock.reels.hook.verbal
             }
-          };
-        } else if (section === "captions" && fullMock.captions) {
-          updated.captions = {
-            ...fullMock.captions,
-            hook: "★ " + fullMock.captions.hook,
-            body: fullMock.captions.body + " (Optimizada para conversiones)."
-          };
-        } else if (section === "hooks" && fullMock.hooks) {
-          updated.hooks = {
-            option1: "Variación 1: " + fullMock.hooks.option1,
-            option2: "Variación 2: " + fullMock.hooks.option2,
-            option3: "Variación 3: " + fullMock.hooks.option3
-          };
+          } : undefined;
         }
+
+        if (section === "all" || section === "captions") {
+          current.captions = fullMock.captions ? {
+            ...fullMock.captions,
+            hook: feedbackPrefix + fullMock.captions.hook,
+            body: feedbackPrefix + fullMock.captions.body
+          } : undefined;
+        }
+
+        if (section === "all" || section === "hooks") {
+          current.hooks = fullMock.hooks ? {
+            option1: feedbackPrefix + fullMock.hooks.option1,
+            option2: feedbackPrefix + fullMock.hooks.option2,
+            option3: feedbackPrefix + fullMock.hooks.option3
+          } : undefined;
+        }
+
+        updated[activeProposalIndex] = current;
         return updated;
       });
       setRegeneratingSection(null);
@@ -982,11 +1025,10 @@ export default function Home() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragging
-                    ? "border-white bg-[#0e0e0e]"
-                    : "border-[#222222] bg-[#0c0c0c] hover:border-neutral-500"
-                }`}
+                className={`border border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging
+                  ? "border-white bg-[#0e0e0e]"
+                  : "border-[#222222] bg-[#0c0c0c] hover:border-neutral-500"
+                  }`}
               >
                 <input
                   type="file"
@@ -1095,11 +1137,10 @@ export default function Home() {
                 ].map((type) => (
                   <label
                     key={type.id}
-                    className={`flex items-center gap-3 p-3 rounded border text-xs cursor-pointer select-none transition-all ${
-                      selectedTypes.includes(type.id)
-                        ? "border-white bg-[#0e0e0e] text-white"
-                        : "border-[#222222] bg-[#0c0c0c] text-neutral-400 hover:border-neutral-700"
-                    }`}
+                    className={`flex items-center gap-3 p-3 rounded border text-xs cursor-pointer select-none transition-all ${selectedTypes.includes(type.id)
+                      ? "border-white bg-[#0e0e0e] text-white"
+                      : "border-[#222222] bg-[#0c0c0c] text-neutral-400 hover:border-neutral-700"
+                      }`}
                   >
                     <input
                       type="checkbox"
@@ -1108,11 +1149,10 @@ export default function Home() {
                       onChange={() => toggleType(type.id)}
                     />
                     <div
-                      className={`h-3 w-3 rounded-full border flex items-center justify-center ${
-                        selectedTypes.includes(type.id)
-                          ? "border-white bg-white"
-                          : "border-neutral-600 bg-transparent"
-                      }`}
+                      className={`h-3 w-3 rounded-full border flex items-center justify-center ${selectedTypes.includes(type.id)
+                        ? "border-white bg-white"
+                        : "border-neutral-600 bg-transparent"
+                        }`}
                     >
                       {selectedTypes.includes(type.id) && (
                         <div className="h-1 w-1 bg-black rounded-full"></div>
@@ -1128,11 +1168,10 @@ export default function Home() {
             <button
               onClick={handleGenerate}
               disabled={isLoading}
-              className={`w-full py-3 rounded text-xs font-mono uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-3 ${
-                isLoading
-                  ? "bg-[#111] text-neutral-500 border border-[#222] cursor-not-allowed"
-                  : "bg-white text-black hover:bg-[#eaeaea]"
-              }`}
+              className={`w-full py-3 rounded text-xs font-mono uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-3 ${isLoading
+                ? "bg-[#111] text-neutral-500 border border-[#222] cursor-not-allowed"
+                : "bg-white text-black hover:bg-[#eaeaea]"
+                }`}
             >
               {isLoading ? (
                 <>
@@ -1169,20 +1208,65 @@ export default function Home() {
       {/* SECTION 3: Resultados */}
       {hasGenerated && (
         <div className="mt-12 space-y-6">
-          <div className="flex items-center justify-between border-b border-[#222222] pb-3">
-            <h2 className="text-md font-semibold tracking-wider text-white uppercase font-mono">
-              03. Copys e Ideas Generadas
-            </h2>
-            <div className="flex gap-4 text-xs font-mono">
-              <span className="text-neutral-400">
-                Tono: <span className="text-white font-medium capitalize">{selectedTone.replace("_", " ")}</span>
-              </span>
+          <div className="flex flex-col space-y-4 border-b border-[#222222] pb-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-md font-semibold tracking-wider text-white uppercase font-mono">
+                03. Copys e Ideas Generadas
+              </h2>
+              <div className="flex gap-4 text-xs font-mono">
+                <span className="text-neutral-400">
+                  Tono: <span className="text-white font-medium capitalize">{selectedTone.replace("_", " ")}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Proposal Selector Tabs */}
+            <div className="flex gap-2 p-1 bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg w-fit">
+              {[0, 1, 2].map((idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveProposalIndex(idx)}
+                  className={`px-4 py-1.5 rounded text-[10px] font-mono uppercase tracking-wider transition-all ${activeProposalIndex === idx
+                    ? "bg-white text-black font-bold"
+                    : "text-neutral-500 hover:text-neutral-300 hover:bg-[#111]"
+                    }`}
+                >
+                  Propuesta {idx + 1}
+                </button>
+              ))}
             </div>
           </div>
 
           <div className="space-y-6">
-            {/* Reel Script split full-width card */}
-            {selectedTypes.includes("reels") && generatedResults.reels && (
+            {/* Iteration Feedback Section */}
+            <div className="bg-[#080808] border border-[#1a1a1a] rounded-lg p-4 space-y-3">
+              <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-500 block">
+                Refinar Propuesta {activeProposalIndex + 1} / Feedback Iterativo
+              </label>
+              <div className="flex gap-3">
+                <textarea
+                  rows={2}
+                  placeholder="Ej: 'Haz el hook más agresivo' o 'Enfatiza más los materiales de construcción'..."
+                  className="flex-1 bg-[#0c0c0c] border border-[#222222] rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f5f5f5] transition-colors resize-none"
+                  value={feedback[activeProposalIndex]}
+                  onChange={(e) => {
+                    const newFeedback = [...feedback];
+                    newFeedback[activeProposalIndex] = e.target.value;
+                    setFeedback(newFeedback);
+                  }}
+                />
+                <button
+                  onClick={() => handleRegenerateSection("all")}
+                  disabled={regeneratingSection === "all" || !feedback[activeProposalIndex].trim()}
+                  className="px-6 bg-[#1a1a1a] border border-[#2c2c2c] text-white rounded text-[10px] font-mono uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {regeneratingSection === "all" ? "Procesando..." : "Refinar"}
+                </button>
+              </div>
+            </div>
+
+            {/* Content Cards */}
+            {selectedTypes.includes("reels") && generatedProposals[activeProposalIndex]?.reels && (
               <div className="bg-[#050505] border border-[#1a1a1a] rounded-lg p-6 space-y-6">
                 <div className="flex justify-between items-start border-b border-[#111] pb-4">
                   <div>
@@ -1190,14 +1274,14 @@ export default function Home() {
                       Reel Script & Composition
                     </span>
                     <p className="text-[10px] text-neutral-500 font-mono mt-1">
-                      Concepto: {generatedResults.reels.concept}
+                      Concepto: {generatedProposals[activeProposalIndex].reels.concept}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() =>
                         copyToClipboard(
-                          `HOOK:\nVisual: ${generatedResults.reels?.hook.visual}\nVerbal: ${generatedResults.reels?.hook.verbal}\nOverlay: ${generatedResults.reels?.hook.overlay}`,
+                          `HOOK:\nVisual: ${generatedProposals[activeProposalIndex].reels?.hook.visual}\nVerbal: ${generatedProposals[activeProposalIndex].reels?.hook.verbal}\nOverlay: ${generatedProposals[activeProposalIndex].reels?.hook.overlay}`,
                           "reels"
                         )
                       }
@@ -1225,15 +1309,15 @@ export default function Home() {
                       <div className="bg-[#0c0c0c] border border-[#222222] rounded p-4 mt-2 space-y-2 text-xs">
                         <p>
                           <span className="text-neutral-500 font-mono">Visual B-roll:</span>{" "}
-                          <span className="text-neutral-200">{generatedResults.reels.hook.visual}</span>
+                          <span className="text-neutral-200">{generatedProposals[activeProposalIndex].reels.hook.visual}</span>
                         </p>
                         <p>
                           <span className="text-neutral-500 font-mono">Verbal Script:</span>{" "}
-                          <span className="text-white italic">"{generatedResults.reels.hook.verbal}"</span>
+                          <span className="text-white italic">"{generatedProposals[activeProposalIndex].reels.hook.verbal}"</span>
                         </p>
                         <p>
                           <span className="text-neutral-500 font-mono">Overlay Title:</span>{" "}
-                          <span className="text-white font-bold">{generatedResults.reels.hook.overlay}</span>
+                          <span className="text-white font-bold">{generatedProposals[activeProposalIndex].reels.hook.overlay}</span>
                         </p>
                       </div>
                     </div>
@@ -1243,7 +1327,7 @@ export default function Home() {
                         Time-Cued Storyboard
                       </p>
                       <div className="space-y-3 mt-2">
-                        {generatedResults.reels.scenes.map((scene, idx) => (
+                        {generatedProposals[activeProposalIndex].reels.scenes.map((scene, idx) => (
                           <div
                             key={idx}
                             className="grid grid-cols-12 gap-3 text-xs border-b border-[#161616] pb-3 last:border-0"
@@ -1270,8 +1354,8 @@ export default function Home() {
 
                   {/* Dynamic Remotion Player */}
                   <div className="md:col-span-5 flex justify-center">
-                    {generatedResults.storyboard && (
-                      <ReelPlayer storyboard={generatedResults.storyboard} />
+                    {generatedProposals[activeProposalIndex].storyboard && (
+                      <ReelPlayer storyboard={generatedProposals[activeProposalIndex].storyboard} />
                     )}
                   </div>
                 </div>
@@ -1280,7 +1364,7 @@ export default function Home() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Meta Ads copy card */}
-              {selectedTypes.includes("meta_ads") && generatedResults.meta_ads && (
+              {selectedTypes.includes("meta_ads") && generatedProposals[activeProposalIndex]?.meta_ads && (
                 <div className="bg-[#050505] border border-[#1a1a1a] rounded-lg p-6 space-y-4 flex flex-col justify-between">
                   <div className="space-y-3">
                     <div className="flex justify-between items-start">
@@ -1289,14 +1373,14 @@ export default function Home() {
                           Meta Ads Copy
                         </span>
                         <p className="text-[10px] text-neutral-500 font-mono mt-1">
-                          Ángulo: {generatedResults.meta_ads.angle}
+                          Ángulo: {generatedProposals[activeProposalIndex].meta_ads.angle}
                         </p>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() =>
                             copyToClipboard(
-                              `HEADLINE: ${generatedResults.meta_ads?.headline}\nPRIMARY TEXT: ${generatedResults.meta_ads?.primary_text}\nDESCRIPTION: ${generatedResults.meta_ads?.description}`,
+                              `HEADLINE: ${generatedProposals[activeProposalIndex].meta_ads?.headline}\nPRIMARY TEXT: ${generatedProposals[activeProposalIndex].meta_ads?.primary_text}\nDESCRIPTION: ${generatedProposals[activeProposalIndex].meta_ads?.description}`,
                               "meta_ads"
                             )
                           }
@@ -1320,13 +1404,13 @@ export default function Home() {
                           Primary Text
                         </p>
                         <p className="text-sm text-neutral-200 mt-1 whitespace-pre-wrap font-sans">
-                          {generatedResults.meta_ads.primary_text}
+                          {generatedProposals[activeProposalIndex].meta_ads.primary_text}
                         </p>
                       </div>
                       <div>
                         <p className="text-[10px] uppercase font-mono tracking-wider text-neutral-500">Headline</p>
                         <p className="text-sm text-white font-medium mt-1 font-sans">
-                          {generatedResults.meta_ads.headline}
+                          {generatedProposals[activeProposalIndex].meta_ads.headline}
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -1335,12 +1419,12 @@ export default function Home() {
                             Description
                           </p>
                           <p className="text-xs text-neutral-400 mt-1">
-                            {generatedResults.meta_ads.description}
+                            {generatedProposals[activeProposalIndex].meta_ads.description}
                           </p>
                         </div>
                         <div>
                           <p className="text-[10px] uppercase font-mono tracking-wider text-neutral-500">CTA Button</p>
-                          <p className="text-xs text-neutral-400 mt-1">{generatedResults.meta_ads.cta}</p>
+                          <p className="text-xs text-neutral-400 mt-1">{generatedProposals[activeProposalIndex].meta_ads.cta}</p>
                         </div>
                       </div>
                     </div>
@@ -1349,7 +1433,7 @@ export default function Home() {
               )}
 
               {/* Instagram Caption card */}
-              {selectedTypes.includes("captions") && generatedResults.captions && (
+              {selectedTypes.includes("captions") && generatedProposals[activeProposalIndex]?.captions && (
                 <div className="bg-[#050505] border border-[#1a1a1a] rounded-lg p-6 space-y-4 flex flex-col justify-between">
                   <div className="space-y-3">
                     <div className="flex justify-between items-start">
@@ -1362,7 +1446,7 @@ export default function Home() {
                         <button
                           onClick={() =>
                             copyToClipboard(
-                              `${generatedResults.captions?.hook}\n\n${generatedResults.captions?.body}\n\n${generatedResults.captions?.cta}`,
+                              `${generatedProposals[activeProposalIndex].captions?.hook}\n\n${generatedProposals[activeProposalIndex].captions?.body}\n\n${generatedProposals[activeProposalIndex].captions?.cta}`,
                               "captions"
                             )
                           }
@@ -1387,11 +1471,11 @@ export default function Home() {
                         </p>
                         <div className="bg-[#0c0c0c] border border-[#222222] rounded p-4 mt-2 space-y-3 font-serif leading-relaxed text-neutral-200">
                           <p className="font-sans font-bold text-white text-base">
-                            {generatedResults.captions.hook}
+                            {generatedProposals[activeProposalIndex].captions.hook}
                           </p>
-                          <p className="text-sm">{generatedResults.captions.body}</p>
+                          <p className="text-sm">{generatedProposals[activeProposalIndex].captions.body}</p>
                           <p className="font-sans font-medium text-neutral-300 border-t border-[#222222] pt-2 mt-2">
-                            {generatedResults.captions.cta}
+                            {generatedProposals[activeProposalIndex].captions.cta}
                           </p>
                         </div>
                       </div>
@@ -1401,7 +1485,7 @@ export default function Home() {
               )}
 
               {/* Hooks card */}
-              {selectedTypes.includes("hooks") && generatedResults.hooks && (
+              {selectedTypes.includes("hooks") && generatedProposals[activeProposalIndex]?.hooks && (
                 <div className="bg-[#050505] border border-[#1a1a1a] rounded-lg p-6 space-y-4 flex flex-col justify-between lg:col-span-2">
                   <div className="space-y-3">
                     <div className="flex justify-between items-start">
@@ -1414,7 +1498,7 @@ export default function Home() {
                         <button
                           onClick={() =>
                             copyToClipboard(
-                              `Hook 1: ${generatedResults.hooks?.option1}\nHook 2: ${generatedResults.hooks?.option2}\nHook 3: ${generatedResults.hooks?.option3}`,
+                              `Hook 1: ${generatedProposals[activeProposalIndex].hooks?.option1}\nHook 2: ${generatedProposals[activeProposalIndex].hooks?.option2}\nHook 3: ${generatedProposals[activeProposalIndex].hooks?.option3}`,
                               "hooks"
                             )
                           }
@@ -1438,19 +1522,19 @@ export default function Home() {
                           <span className="text-[9px] uppercase font-mono text-neutral-500 block mb-1">
                             Hook 01
                           </span>
-                          <p className="font-semibold text-white">{generatedResults.hooks.option1}</p>
+                          <p className="font-semibold text-white">{generatedProposals[activeProposalIndex].hooks.option1}</p>
                         </div>
                         <div className="p-3 bg-[#0c0c0c] border border-[#222222] rounded hover:border-neutral-600 transition-colors">
                           <span className="text-[9px] uppercase font-mono text-neutral-500 block mb-1">
                             Hook 02
                           </span>
-                          <p className="font-semibold text-white">{generatedResults.hooks.option2}</p>
+                          <p className="font-semibold text-white">{generatedProposals[activeProposalIndex].hooks.option2}</p>
                         </div>
                         <div className="p-3 bg-[#0c0c0c] border border-[#222222] rounded hover:border-neutral-600 transition-colors">
                           <span className="text-[9px] uppercase font-mono text-neutral-500 block mb-1">
                             Hook 03
                           </span>
-                          <p className="font-semibold text-white">{generatedResults.hooks.option3}</p>
+                          <p className="font-semibold text-white">{generatedProposals[activeProposalIndex].hooks.option3}</p>
                         </div>
                       </div>
                     </div>
