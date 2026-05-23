@@ -36,10 +36,18 @@ export interface StoryboardData {
     voiceover_prompt?: string;
   };
   scenes: Scene[];
+  settings?: {
+    fontSize: "small" | "medium" | "large";
+    fontFamily: "modern" | "elegant" | "bold" | "minimalist";
+  };
 }
 
 // Scene rendering component with Ken Burns effect and text animations
-const ReelScene: React.FC<{ scene: Scene; fps: number }> = ({ scene, fps }) => {
+const ReelScene: React.FC<{
+  scene: Scene;
+  fps: number;
+  settings?: StoryboardData["settings"];
+}> = ({ scene, fps, settings }) => {
   const frame = useCurrentFrame();
   const durationFrames = (scene.end_time - scene.start_time) * fps;
 
@@ -89,23 +97,47 @@ const ReelScene: React.FC<{ scene: Scene; fps: number }> = ({ scene, fps }) => {
           className="absolute inset-0 flex flex-col px-8 pointer-events-none select-none"
           style={{ opacity: textOpacity }}
         >
-          {scene.overlay_text.position === "center" ? (
-            <div className="m-auto text-center space-y-2">
-              <h2 className="text-2xl md:text-3xl font-light tracking-[0.25em] text-white uppercase font-sans drop-shadow-md">
-                {scene.overlay_text.text}
-              </h2>
-              <div className="h-[1px] w-12 bg-white/40 mx-auto mt-4" />
-            </div>
-          ) : (
-            <div className="mt-auto mb-32 text-left">
-              <span className="text-[10px] tracking-[0.3em] font-mono text-neutral-400 uppercase block mb-2">
-                // SPATIAL DETAILS
-              </span>
-              <h2 className="text-xl md:text-2xl font-normal tracking-wide text-white uppercase font-sans drop-shadow-md">
-                {scene.overlay_text.text}
-              </h2>
-            </div>
-          )}
+          {(() => {
+            const activeSettings = {
+              fontSize: "medium" as const,
+              fontFamily: "modern" as const,
+              ...settings
+            };
+
+            const sizeMap = {
+              small: "scale-75",
+              medium: "scale-100",
+              large: "scale-125",
+            };
+
+            const fontMap = {
+              modern: "font-sans font-light tracking-[0.2em]",
+              elegant: "font-serif italic tracking-normal",
+              bold: "font-sans font-black tracking-tight",
+              minimalist: "font-sans font-extralight tracking-[0.4em]",
+            };
+
+            const sizeClass = sizeMap[activeSettings.fontSize] || "scale-100";
+            const fontClass = fontMap[activeSettings.fontFamily] || fontMap.modern;
+
+            return scene.overlay_text.position === "center" ? (
+              <div className={`m-auto text-center space-y-2 origin-center ${sizeClass}`}>
+                <h2 className={`text-2xl md:text-3xl text-white uppercase drop-shadow-md lg:text-5xl ${fontClass}`}>
+                  {scene.overlay_text.text}
+                </h2>
+                <div className="h-[1px] w-12 bg-white/40 mx-auto mt-4" />
+              </div>
+            ) : (
+              <div className={`mt-auto mb-32 text-left origin-left ${sizeClass}`}>
+                <span className="text-[10px] tracking-[0.3em] font-mono text-neutral-400 uppercase block mb-2">
+                  // SPATIAL DETAILS
+                </span>
+                <h2 className={`text-xl md:text-2xl text-white uppercase drop-shadow-md lg:text-4xl ${fontClass}`}>
+                  {scene.overlay_text.text}
+                </h2>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -141,7 +173,7 @@ export const ReelComposition: React.FC<{ storyboard: StoryboardData }> = ({
             from={startFrame}
             durationInFrames={durationFrames}
           >
-            <ReelScene scene={scene} fps={fps} />
+            <ReelScene scene={scene} fps={fps} settings={storyboard.settings} />
           </Sequence>
         );
       })}

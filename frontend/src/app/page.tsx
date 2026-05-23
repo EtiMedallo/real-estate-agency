@@ -94,6 +94,12 @@ export default function Home() {
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({});
   const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null);
   const [feedback, setFeedback] = useState(["", "", ""]); // Feedback for each proposal
+  const [videoSettings, setVideoSettings] = useState<{
+    fontSize: "small" | "medium" | "large";
+    fontFamily: "modern" | "elegant" | "bold" | "minimalist";
+  }[]>(
+    Array(3).fill({ fontSize: "medium", fontFamily: "modern" })
+  );
 
   // Loading Steps for visual premium effect
   const loadingSteps = [
@@ -769,7 +775,11 @@ export default function Home() {
       }
     };
 
-    return contentMap[tone] || contentMap.luxury_minimal;
+    const result = (contentMap[tone] || contentMap.luxury_minimal) as GeneratedContent;
+    if (result.storyboard) {
+      result.storyboard.settings = videoSettings[variation];
+    }
+    return result;
   };
 
   // Run generation loop
@@ -1202,6 +1212,137 @@ export default function Home() {
               </div>
             )}
           </section>
+
+          {/* New Section: Ajustes de Video (Floating or separate) */}
+          {hasGenerated && (
+            <section className="bg-[#050505] border border-[#1a1a1a] rounded-lg p-6 space-y-6">
+              <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-3">
+                <h2 className="text-sm font-semibold tracking-wider text-neutral-200 uppercase font-mono">
+                  Ajustes de Video
+                </h2>
+                <span className="text-[10px] text-neutral-500 font-mono">PERSONALIZACIÓN EN TIEMPO REAL</span>
+              </div>
+
+              {/* Font Size Slider */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-400">
+                    Tamaño del Texto
+                  </label>
+                  <span className="text-[10px] text-white uppercase font-mono bg-neutral-900 px-2 py-0.5 rounded">
+                    {videoSettings[activeProposalIndex].fontSize}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="1"
+                  className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-white"
+                  value={
+                    videoSettings[activeProposalIndex].fontSize === "small" ? 0 :
+                      videoSettings[activeProposalIndex].fontSize === "medium" ? 1 : 2
+                  }
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    const sizes: ("small" | "medium" | "large")[] = ["small", "medium", "large"];
+                    const newSettings = [...videoSettings];
+                    newSettings[activeProposalIndex] = {
+                      ...newSettings[activeProposalIndex],
+                      fontSize: sizes[val]
+                    };
+                    setVideoSettings(newSettings);
+
+                    // Force storyboard update in generatedProposals
+                    setGeneratedProposals(prev => {
+                      const updated = [...prev];
+                      if (updated[activeProposalIndex]?.storyboard) {
+                        updated[activeProposalIndex].storyboard.settings = newSettings[activeProposalIndex];
+                      }
+                      return updated;
+                    });
+                  }}
+                />
+                <div className="flex justify-between text-[8px] text-neutral-500 font-mono uppercase tracking-tighter">
+                  <span>Pequeño</span>
+                  <span>Mediano</span>
+                  <span>Grande</span>
+                </div>
+              </div>
+
+              {/* Typography Selector */}
+              <div className="space-y-3">
+                <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-400">
+                  Tipografía
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "modern", name: "Moderna", desc: "Sans Clean" },
+                    { id: "elegant", name: "Elegante", desc: "Serif Classic" },
+                    { id: "bold", name: "Bold", desc: "High Impact" },
+                    { id: "minimalist", name: "Minimalista", desc: "Ultra Light" }
+                  ].map((font) => (
+                    <button
+                      key={font.id}
+                      onClick={() => {
+                        const newSettings = [...videoSettings];
+                        newSettings[activeProposalIndex] = {
+                          ...newSettings[activeProposalIndex],
+                          fontFamily: font.id as any
+                        };
+                        setVideoSettings(newSettings);
+
+                        // Force storyboard update
+                        setGeneratedProposals(prev => {
+                          const updated = [...prev];
+                          if (updated[activeProposalIndex]?.storyboard) {
+                            updated[activeProposalIndex].storyboard.settings = newSettings[activeProposalIndex];
+                          }
+                          return updated;
+                        });
+                      }}
+                      className={`flex flex-col items-start p-2 rounded border text-left transition-all ${videoSettings[activeProposalIndex].fontFamily === font.id
+                          ? "border-white bg-[#0e0e0e]"
+                          : "border-[#222222] bg-[#0c0c0c] hover:border-neutral-700"
+                        }`}
+                    >
+                      <span className={`text-[10px] font-medium ${videoSettings[activeProposalIndex].fontFamily === font.id ? "text-white" : "text-neutral-400"
+                        }`}>
+                        {font.name}
+                      </span>
+                      <span className="text-[8px] text-neutral-500 font-mono uppercase">
+                        {font.desc}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Download Button */}
+              <div className="pt-4 border-t border-[#1a1a1a]">
+                <button
+                  onClick={() => {
+                    alert("Iniciando exportación de video en alta resolución (1080x1920)...\n\nEsta es una simulación. En producción, esto generaría una tarea de renderizado en servidor (Remotion Lambda).");
+
+                    // Simple download record simulation
+                    const link = document.createElement("a");
+                    link.href = "#";
+                    link.download = `${projectName.replace(/\s+/g, "_")}_reel.mp4`;
+                    console.log("Simulated download triggered for:", link.download);
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded text-[10px] font-mono uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  Descargar Video (.MP4)
+                </button>
+                <p className="text-[8px] text-neutral-600 text-center mt-2 font-mono uppercase">
+                  Renderizado optimizado para Instagram / TikTok
+                </p>
+              </div>
+            </section>
+          )}
         </div>
       </div>
 
